@@ -59,6 +59,7 @@
     <Compile Include="src\Destinations\AsTextureDX11Instance.cs" />
     <Compile Include="src\Destinations\AsTextureDX11Node.cs" />
     <Compile Include="src\Features\Criteria\Position.cs" />
+    <Compile Include="src\Features\DetectFeatures2.cs" />
     <Compile Include="src\Features\DetectFeatures.cs" />
     <Compile Include="src\Features\FeatureSet.cs" />
     <Compile Include="src\Features\FeatureSetSplit.cs" />
@@ -66,6 +67,8 @@
     <Compile Include="src\Features\Criteria\ICriteria.cs" />
     <Compile Include="src\Features\MatchFeatures.cs" />
     <Compile Include="src\Filters\Crop.cs" />
+    <Compile Include="src\Filters\FloydSteinbergDither.cs" />
+    <Compile Include="src\Filters\DeBayer.cs" />
     <Compile Include="src\Filters\Transform.cs" />
     <Compile Include="src\Filters\RotateStep.cs" />
     <Compile Include="src\Filters\UsharpMask.cs" />

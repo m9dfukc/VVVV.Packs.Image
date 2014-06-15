@@ -15,7 +15,6 @@ using FlyCapture2;
 using FlyCapture2Managed;
 
 using VVVV.CV.Core;
-using VVVV.CV.Core;
 
 #endregion usings
 
@@ -35,6 +34,28 @@ namespace VVVV.Nodes.FlyCapture
 				Open();
 			}
 		}
+        private Boolean FDecode;
+        public Boolean Decode
+        {
+            set
+            {
+                FDecode = value;
+                FOutput.Image.Dispose();
+            }
+        }
+        private int FMemoryChannel;
+        public int MemoryChannel
+        {
+            set
+            {
+                FMemoryChannel = value;
+                if (value >= 0)
+                {
+                    Close();
+                    Open();
+                }
+            }
+        }
 
 		float FFramerate;
 		public float Framerate
@@ -63,6 +84,9 @@ namespace VVVV.Nodes.FlyCapture
                 }
 
 				FCamera.Connect(FGuid);
+                if (FMemoryChannel >= 0)
+                    FCamera.RestoreFromMemoryChannel((uint)FMemoryChannel);
+
 				VideoMode mode = new VideoMode();
 				FrameRate rate = new FrameRate();
 
@@ -74,8 +98,7 @@ namespace VVVV.Nodes.FlyCapture
 				FCamera.StartCapture(CaptureCallback);
 
                 ReAllocate();
-
-				Status = "OK";
+                Status = "OK";
                 return true;
 			}
 			catch(Exception e)
@@ -111,10 +134,21 @@ namespace VVVV.Nodes.FlyCapture
 
 		public unsafe void CaptureCallback(ManagedImage image)
 		{
-            if (!FOutput.Image.Allocated)
-                FOutput.Image.Initialise(new Size((int)image.cols, (int)image.rows), Utils.GetFormat(image.pixelFormat));            
 
-			FOutput.Image.SetPixels((IntPtr)image.data);
+            if (!FOutput.Image.Allocated)
+            {
+                TColorFormat format = FDecode ? TColorFormat.RGB8 : Utils.GetFormat(image.pixelFormat);
+                FOutput.Image.Initialise(new Size((int)image.cols, (int)image.rows), format);
+            }
+
+            if (FDecode)
+            {
+                image.Convert(PixelFormat.PixelFormatBgr, FImage);
+                FOutput.Image.SetPixels((IntPtr)FImage.data);
+            }
+            else
+                FOutput.Image.SetPixels((IntPtr)image.data);
+
 			FOutput.Send();
 		}
 
@@ -133,6 +167,12 @@ namespace VVVV.Nodes.FlyCapture
 		
 		[Input("GUID")]
 		IDiffSpread<ManagedPGRGuid> FPinInGUID;
+
+        [Input("Decode")]
+        IDiffSpread<Boolean> FPinInDecode;
+
+        [Input("MemoryChannel", DefaultValue = -1, MinValue = 0)]
+        IDiffSpread<int> FPinInMemoryChannel;
 
 		[Output("Mode")]
 		ISpread<string> FPinOutMode;
@@ -154,6 +194,14 @@ namespace VVVV.Nodes.FlyCapture
 			if (FPinInGUID.IsChanged || SpreadChanged)
 				for (int i = 0; i < InstanceCount; i++)
 					FProcessor[i].Guid = FPinInGUID[i];
+
+            if (FPinInDecode.IsChanged || SpreadChanged)
+                for (int i = 0; i < InstanceCount; i++)
+                    FProcessor[i].Decode = FPinInDecode[i];
+
+            if (FPinInMemoryChannel.IsChanged || SpreadChanged)
+                for (int i = 0; i < InstanceCount; i++)
+                    FProcessor[i].MemoryChannel = FPinInMemoryChannel[i];
 
 			FPinOutMode.SliceCount = InstanceCount;
 			FPinOutFramerate.SliceCount = InstanceCount;
